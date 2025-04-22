@@ -1,8 +1,12 @@
 #include "arp.h"
 
+#include "buf.h"
 #include "ethernet.h"
+#include "map.h"
 #include "net.h"
 
+#include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 /**
@@ -56,8 +60,14 @@ void arp_print() {
  *
  * @param target_ip 想要知道的目标的ip地址
  */
-void arp_req(uint8_t *target_ip) {
-    // TO-DO
+void arp_req(const uint8_t *target_ip) {
+    buf_init(&txbuf, sizeof(arp_pkt_t));
+    memcpy(txbuf.data, &arp_init_pkt, sizeof(arp_init_pkt));
+    arp_pkt_t *pkt = (arp_pkt_t *)txbuf.data;
+    pkt->opcode16 = htons(ARP_REQUEST);
+    memcpy(pkt->target_ip, target_ip, NET_IP_LEN);
+    memset(pkt->target_mac, 0, NET_MAC_LEN);
+    ethernet_out(&txbuf, ether_broadcast_mac, NET_PROTOCOL_ARP);
 }
 
 /**
@@ -66,8 +76,14 @@ void arp_req(uint8_t *target_ip) {
  * @param target_ip 目标ip地址
  * @param target_mac 目标mac地址
  */
-void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
-    // TO-DO
+void arp_resp(const uint8_t *target_ip, const uint8_t *target_mac) {
+    buf_init(&txbuf, sizeof(arp_pkt_t));
+    memcpy(txbuf.data, &arp_init_pkt, sizeof(arp_init_pkt));
+    arp_pkt_t * pkt = (arp_pkt_t *)txbuf.data;
+    pkt->opcode16 = htons(ARP_REPLY);
+    memcpy(pkt, target_ip, NET_IP_LEN);
+    memcpy(pkt, target_mac, NET_MAC_LEN);
+    ethernet_out(&txbuf, target_mac, NET_PROTOCOL_ARP);
 }
 
 /**
@@ -76,8 +92,44 @@ void arp_resp(uint8_t *target_ip, uint8_t *target_mac) {
  * @param buf 要处理的数据包
  * @param src_mac 源mac地址
  */
-void arp_in(buf_t *buf, uint8_t *src_mac) {
+void arp_in(buf_t *buf, const uint8_t *src_mac) {
     // TO-DO
+    if (buf->len < 2 + 2 + 1 + 1 + 2) {
+        // DROP
+        return;
+    }
+    arp_pkt_t * pkt = (arp_pkt_t *)buf->data;
+    // some check
+    if (pkt->hw_type16 != htons(ARP_HW_ETHER)) {
+        return;
+    }
+    if (pkt->pro_type16 != htons(NET_PROTOCOL_IP)) {
+        return;
+    }
+    if (pkt->hw_len != NET_MAC_LEN) {
+        return;
+    }
+    if (pkt->pro_len != NET_IP_LEN) {
+        return;
+    }
+    if (pkt->opcode16 != htons(ARP_REQUEST) && pkt->opcode16 != htons(ARP_REPLY)) {
+        return;
+    }
+    map_set(&arp_table, pkt->sender_ip, pkt->sender_mac);
+    // if (memcmp(pkt->sender_mac, src_mac, NET_MAC_LEN) != 0) {
+    //     return;
+    // }
+    // refresh the arp_buf
+    buf_t * cache = map_get(&arp_buf, pkt->sender_ip);
+    if (cache) {
+        ethernet_out(cache, pkt->sender_mac, NET_PROTOCOL_IP);
+        map_delete(&arp_buf, pkt->sender_ip);
+    } else {
+        if (pkt->opcode16 == htons(ARP_REQUEST)
+            && memcmp(pkt->target_ip, net_if_ip, NET_IP_LEN) == 0) {
+            arp_resp(pkt->sender_ip, pkt->sender_mac);
+        }
+    }
 }
 
 /**
@@ -87,8 +139,18 @@ void arp_in(buf_t *buf, uint8_t *src_mac) {
  * @param ip 目标ip地址
  * @param protocol 上层协议
  */
-void arp_out(buf_t *buf, uint8_t *ip) {
+void arp_out(buf_t *buf, const uint8_t *ip) {
     // TO-DO
+    uint8_t * mac = map_get(&arp_table, ip);
+    if (mac) {
+        ethernet_out(buf, mac, NET_PROTOCOL_IP);
+    } else {
+        buf_t * cache = map_get(&arp_buf, ip);
+        if (!cache) {
+            map_set(&arp_buf, ip, buf);
+            arp_req(ip);
+        }
+    }
 }
 
 /**

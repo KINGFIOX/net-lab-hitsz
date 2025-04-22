@@ -24,8 +24,8 @@ typedef struct arp_pkt {
 
 void arp_init();
 void arp_print();
-void arp_in(buf_t *buf, uint8_t *src_mac);
-void arp_out(buf_t *buf, uint8_t *ip);
-void arp_req(uint8_t *target_ip);
-void arp_resp(uint8_t *target_ip, uint8_t *target_mac);
+void arp_in(buf_t *buf, const uint8_t *src_mac);
+void arp_out(buf_t *buf, const uint8_t *ip);
+void arp_req(const uint8_t *target_ip);
+void arp_resp(const uint8_t *target_ip, const uint8_t *target_mac);
 #endif

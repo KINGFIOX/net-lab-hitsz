@@ -17,7 +17,8 @@ endif()
 
 set(HTTP_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app/resource)
 
-add_compile_options(-Wall -g)
+# add_compile_options(-Wall -g -O0 -fsanitize=address)
+# add_link_options(-fsanitize=address)
 # set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/test) 
 include_directories(./include ./Npcap/Include)
 link_directories(./Npcap/Lib ./Npcap/Lib/x64)

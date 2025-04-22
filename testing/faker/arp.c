@@ -23,7 +23,7 @@ map_t arp_buf;
 //         fprintf(arp_fout,"state:%d\n",state);
 // }
 
-void arp_in(buf_t *buf, uint8_t *src_mac) {
+void arp_in(buf_t *buf, const uint8_t *src_mac) {
     fprintf(arp_fout, "arp_in:\n");
     fprintf(arp_fout, "\tmac:%s\n", print_mac(src_mac));
     fprint_buf(arp_fout, buf);

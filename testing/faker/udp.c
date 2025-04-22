@@ -47,7 +47,7 @@ void udp_send(uint8_t *data, uint16_t len, uint16_t src_port, uint8_t *dest_ip, 
     }
 }
 
-void udp_in(buf_t *buf, uint8_t *src_ip) {
+void udp_in(buf_t *buf, const uint8_t *src_ip) {
     fprintf(udp_fout, "udp_in:\n\tsrc_ip:%s\n", print_ip(src_ip));
     fprint_buf(udp_fout, buf);
 }

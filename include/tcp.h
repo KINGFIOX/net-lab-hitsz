@@ -68,7 +68,7 @@ void tcp_init();
 int tcp_open(uint16_t port, tcp_handler_t handler);
 void tcp_close(uint16_t port);
 
-void tcp_in(buf_t *buf, uint8_t *src_ip);
+void tcp_in(buf_t *buf, const uint8_t *src_ip);
 void tcp_out(tcp_conn_t *tcp_conn, buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port, uint8_t flags);
 void tcp_send(tcp_conn_t *tcp_conn, uint8_t *data, uint16_t len, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port);
 #endif

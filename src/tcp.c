@@ -127,7 +127,7 @@ void tcp_out(tcp_conn_t *tcp_conn, buf_t *buf, uint16_t src_port, uint8_t *dst_i
  * @param buf       要处理的包
  * @param src_ip    源 IP 地址
  */
-void tcp_in(buf_t *buf, uint8_t *src_ip) {
+void tcp_in(buf_t *buf, const uint8_t *src_ip) {
     // 包检查：判断接收到的数据包长度是否小于 TCP 头部的长度
     // 如果小于，则说明数据包不完整，直接返回，不进行后续处理
     if (buf->len < sizeof(tcp_hdr_t))

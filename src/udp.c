@@ -15,7 +15,7 @@ map_t udp_table;
  * @param buf 要处理的包
  * @param src_ip 源ip地址
  */
-void udp_in(buf_t *buf, uint8_t *src_ip) {
+void udp_in(buf_t *buf, const uint8_t *src_ip) {
     // TO-DO
 }
 

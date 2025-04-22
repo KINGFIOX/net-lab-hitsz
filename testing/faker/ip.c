@@ -12,7 +12,7 @@ char *print_ip(uint8_t *ip);
 char *print_mac(uint8_t *mac);
 void fprint_buf(FILE *f, buf_t *buf);
 
-void ip_in(buf_t *buf, uint8_t *src_mac) {
+void ip_in(buf_t *buf, const uint8_t *src_mac) {
     fprintf(ip_fout, "ip_in:\n");
     fprintf(ip_fout, "\tmac:%s\n", print_mac(src_mac));
     fprint_buf(ip_fout, buf);

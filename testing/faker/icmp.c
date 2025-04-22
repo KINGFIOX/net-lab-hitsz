@@ -15,7 +15,7 @@ void fprint_buf(FILE *f, buf_t *buf);
 //         fprint_buf(icmp_fout, req_buf);
 // }
 
-void icmp_in(buf_t *buf, uint8_t *src_ip) {
+void icmp_in(buf_t *buf, const uint8_t *src_ip) {
     fprintf(icmp_fout, "icmp_in:\n");
     fprintf(icmp_fout, "\tip: %s\n", print_ip(src_ip));
     fprint_buf(icmp_fout, buf);

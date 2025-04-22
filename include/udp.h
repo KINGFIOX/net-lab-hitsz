@@ -15,7 +15,7 @@ typedef struct udp_hdr {
 typedef void (*udp_handler_t)(uint8_t *data, size_t len, uint8_t *src_ip, uint16_t src_port);
 
 void udp_init();
-void udp_in(buf_t *buf, uint8_t *src_ip);
+void udp_in(buf_t *buf, const uint8_t *src_ip);
 void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port);
 void udp_send(uint8_t *data, uint16_t len, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port);
 int udp_open(uint16_t port, udp_handler_t handler);

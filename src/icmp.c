@@ -19,7 +19,7 @@ static void icmp_resp(buf_t *req_buf, uint8_t *src_ip) {
  * @param buf 要处理的数据包
  * @param src_ip 源ip地址
  */
-void icmp_in(buf_t *buf, uint8_t *src_ip) {
+void icmp_in(buf_t *buf, const uint8_t *src_ip) {
     // TO-DO
 }
 

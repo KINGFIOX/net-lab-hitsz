@@ -18,13 +18,13 @@ map_t net_table;
  * @brief 网卡MAC地址
  *
  */
-uint8_t net_if_mac[NET_MAC_LEN] = NET_IF_MAC;
+const uint8_t net_if_mac[NET_MAC_LEN] = NET_IF_MAC;
 
 /**
  * @brief 网卡IP地址
  *
  */
-uint8_t net_if_ip[NET_IP_LEN] = NET_IF_IP;
+const uint8_t net_if_ip[NET_IP_LEN] = NET_IF_IP;
 
 /**
  * @brief 网卡接收和发送缓冲区

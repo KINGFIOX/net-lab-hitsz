@@ -11,7 +11,7 @@
  * @param buf 要处理的数据包
  * @param src_mac 源mac地址
  */
-void ip_in(buf_t *buf, uint8_t *src_mac) {
+void ip_in(buf_t *buf, const uint8_t *src_mac) {
     // TO-DO
 }
 /**
