@@ -69,8 +69,20 @@ uint8_t ip_prefix_match(const uint8_t *ipa, const uint8_t *ipb) {
  * @param len 要计算的长度
  * @return uint16_t 校验和
  */
-uint16_t checksum16(uint16_t *data, size_t len) {
+uint16_t checksum16(uint16_t *data, size_t size) {
     // TO-DO
+    uint32_t sum = 0;
+    int len = size >> 1;
+    for (size_t i = 0; i < len; i++) {
+        sum += data[i];
+        if (sum > 0x0000ffff) {
+            sum = (sum & 0x0000ffff) + (sum >> 16);
+        }
+    }
+    // TODO
+    int parity = size & 0x1;
+    uint16_t checksum = ~sum;
+    return checksum;
 }
 
 #pragma pack(1)
