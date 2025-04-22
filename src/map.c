@@ -61,6 +61,8 @@ void *map_entry_get(map_t *map, size_t pos) {
  */
 int map_entry_valid(map_t *map, const void *entry) {
     time_t entry_time = *(time_t *)((uint8_t *)entry + map->key_len + map->value_len);
+    // 1. entry_time != 0
+    // 2. only map set timeout, then check timeout
     return entry_time && (!map->timeout || entry_time + map->timeout >= time(NULL));
 }
 
@@ -94,14 +96,14 @@ int map_set(map_t *map, const void *key, const void *value) {
     uint8_t *old_value = map_get(map, key);
     if (old_value) {
         map->value_constuctor(old_value, value, map->value_len);
-        *(time_t *)(old_value + map->value_len) = time(NULL);
+        *(time_t *)(old_value + map->value_len) = time(NULL); // refresh
         return 0;
     }
     if (map->size == map->max_size)
         return -1;
     for (size_t i = 0; i < map->max_size; i++) {
         uint8_t *entry = map_entry_get(map, i);
-        if (!map_entry_valid(map, entry)) {
+        if (!map_entry_valid(map, entry)) { // find an invalid entry
             memcpy(entry, key, map->key_len);
             map->value_constuctor(entry + map->key_len, value, map->value_len);
             *(time_t *)(entry + map->key_len + map->value_len) = time(NULL);

@@ -48,13 +48,13 @@ char *timetos(time_t timestamp) {
  * @param ipb 第二个ip
  * @return uint8_t 两个ip相同的前缀长度
  */
-uint8_t ip_prefix_match(uint8_t *ipa, uint8_t *ipb) {
+uint8_t ip_prefix_match(const uint8_t *ipa, const uint8_t *ipb) {
     uint8_t count = 0;
     for (size_t i = 0; i < 4; i++) {
         uint8_t flag = ipa[i] ^ ipb[i];
         for (size_t j = 0; j < 8; j++) {
             if (flag & (1 << 7))
-                return count;
+                return count; // first bit not match
             else
                 count++, flag <<= 1;
         }

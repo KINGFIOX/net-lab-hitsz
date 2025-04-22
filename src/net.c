@@ -37,7 +37,9 @@ buf_t rxbuf, txbuf;  // 一个buf足够单线程使用
  *
  */
 int net_init() {
-    map_init(&net_table, sizeof(uint16_t), sizeof(net_handler_t), 0, 0, NULL, NULL);
+    map_init(&net_table, sizeof(uint16_t),
+        sizeof(net_handler_t), 0,
+        0, NULL, NULL);
     if (driver_open() == -1)
         return -1;
     ethernet_init();

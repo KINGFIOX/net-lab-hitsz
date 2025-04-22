@@ -16,6 +16,7 @@ int buf_init(buf_t *buf, size_t len) {
     }
 
     buf->len = len;
+    // 指向一个中间的位置, 是为了方便加入 ether frame header 和 ip packet header
     buf->data = buf->payload + BUF_MAX_LEN / 2 - len;
     return 0;
 }

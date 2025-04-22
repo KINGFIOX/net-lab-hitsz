@@ -13,13 +13,14 @@ extern FILE *out_log;
 int check_log();
 FILE *open_file(char *path, char *name, char *mode);
 
+// the exec cmd is: /home/wangfiox/net-lab/build/eth_in "/home/wangfiox/net-lab/testing/data/eth_in"
 buf_t buf;
 int main(int argc, char *argv[]) {
     int ret;
     pcap_in = open_file(argv[1], "in.pcap", "r");
     pcap_out = open_file(argv[1], "out.pcap", "w");
     ip_fout = open_file(argv[1], "log", "w");
-    if (pcap_in == 0 || pcap_out == 0 || ip_fout == 0) {
+    if (pcap_in == 0 || pcap_out == 0 || ip_fout == 0) { // open failed
         if (pcap_in)
             fclose(pcap_in);
         else

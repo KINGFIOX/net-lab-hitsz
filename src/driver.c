@@ -37,7 +37,7 @@ char pcap_errbuf[PCAP_ERRBUF_SIZE];
  * @param mask 出口参数，该网卡的掩码
  * @return int 成功为0，失败为-1
  */
-int driver_find(uint8_t *ip, char *if_name, uint8_t *mask) {
+int driver_find(const uint8_t *ip, char *if_name, uint8_t *mask) {
     pcap_if_t *alldevs;
     pcap_if_t *d;
     pcap_addr_t *a;
@@ -50,13 +50,22 @@ int driver_find(uint8_t *ip, char *if_name, uint8_t *mask) {
         return -1;
     }
 
-    for (d = alldevs; d; d = d->next, if_num++)
-        for (a = d->addresses; a; a = a->next)
+    // for each all interfaces, and all ips the interface has
+    for (d = alldevs; d; d = d->next, if_num++) {
+        printf("d: %s\n", d->name);
+        for (a = d->addresses; a; a = a->next) {
             if (a->addr && a->addr->sa_family == AF_INET) {
+                // get the length of the longest prefix of ip(passed in) and the ip(the interface has)
                 match[if_num] = ip_prefix_match(ip, (uint8_t *)&((struct sockaddr_in *)a->addr)->sin_addr.s_addr);
-                if (match[if_num] < ip_prefix_match((uint8_t *)&mask_all, (uint8_t *)&((struct sockaddr_in *)(a->netmask))->sin_addr.s_addr))
+                // check, if the ip(passed in) is in the subnet of the interface
+                if (match[if_num] < ip_prefix_match((uint8_t *)&mask_all, 
+                    (uint8_t *)&((struct sockaddr_in *)(a->netmask))->sin_addr.s_addr)) {
                     match[if_num] = 0;
+                }
             }
+        }
+    }
+    // no interface found
     if (if_num == 0) {
         fprintf(stderr, "Error, no interface found.\n");
         return -1;
@@ -65,12 +74,13 @@ int driver_find(uint8_t *ip, char *if_name, uint8_t *mask) {
     size_t max_if = 0;
     for (i = 0; i < if_num; i++)
         if (match[i] > max_match)
-            max_if = i, max_match = match[i];
+            max_if = i, max_match = match[i]; // record the longest prefix match
     if (max_match == 0) {
         fprintf(stderr, "Error, no interface found.\n");
         return -1;
     }
 
+    // make the pointer d point to the interface with the longest prefix match
     for (d = alldevs, i = 0; i < max_if; d = d->next, i++)
         ;
     if (max_match == 32) {
@@ -107,7 +117,7 @@ int driver_open() {
     }
     printf("Using interface %s, my ip is %s.\n", if_name, iptos(net_if_ip));
 
-    if ((pcap = pcap_open_live(if_name, 65536, 1, 10, pcap_errbuf)) == NULL)  // 混杂模式打开网卡
+    if ((pcap = pcap_open_live(if_name, 65536, /* promisc mode, 混杂模式 */ 1, 10, pcap_errbuf)) == NULL)  // 混杂模式打开网卡
     {
         fprintf(stderr, "Error in pcap_open_live.\n%s.\n", pcap_errbuf);
         return -1;
@@ -118,7 +128,7 @@ int driver_open() {
         return -1;
     }
     char filter_exp[PCAP_BUF_SIZE];
-    struct bpf_program fp;
+    struct bpf_program fp; // berkeley packet filter, 用于在数据包到达应用程序之前进行过滤
     uint8_t mac_addr[6] = NET_IF_MAC;
     sprintf(filter_exp,  // 过滤数据包
             "(ether dst %02x:%02x:%02x:%02x:%02x:%02x or ether broadcast) and (not ether src %02x:%02x:%02x:%02x:%02x:%02x)",
@@ -153,7 +163,7 @@ int driver_open() {
 int driver_recv(buf_t *buf) {
     struct pcap_pkthdr *pkt_hdr;
     const uint8_t *pkt_data;
-    int ret = pcap_next_ex(pcap, &pkt_hdr, &pkt_data);
+    int ret = pcap_next_ex(pcap, &pkt_hdr, &pkt_data); // read the next packet
     if (ret == 0)
         return 0;
     else if (ret == 1) {

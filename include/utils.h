@@ -15,5 +15,5 @@ uint16_t transport_checksum(uint8_t protocol, buf_t *buf, uint8_t *src_ip, uint8
 char *iptos(uint8_t *ip);
 char *mactos(uint8_t *mac);
 char *timetos(time_t timestamp);
-uint8_t ip_prefix_match(uint8_t *ipa, uint8_t *ipb);
+uint8_t ip_prefix_match(const uint8_t *ipa, const uint8_t *ipb);
 #endif

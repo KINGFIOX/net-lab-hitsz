@@ -57,7 +57,7 @@ extern map_t arp_buf;
 //         "unknown"
 // };
 
-FILE *open_file(char *path, char *name, char *mode) {
+FILE *open_file(const char *path, const char *name, const char *mode) {
     char filename[128];
     sprintf(filename, "%s/%s", path, name);
     // printf("opening: %s\n", filename);
