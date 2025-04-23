@@ -1,6 +1,11 @@
 #include "tcp.h"
 
+#include "buf.h"
+#include "ip.h"
+#include "net.h"
+
 #include <assert.h>
+#include <netinet/in.h>
 #include <stdbool.h>
 
 /**
@@ -25,10 +30,12 @@ static map_t tcp_conn_table;  // [src_ip, src_port, dst_port] -> tcp_conn
  */
 size_t bytes_in_flight(size_t len, uint8_t flags) {
     size_t res = len;
-    if (TCP_FLG_ISSET(flags, TCP_FLG_SYN))
+    if (TCP_FLG_ISSET(flags, TCP_FLG_SYN)) {
         res += 1;
-    if (TCP_FLG_ISSET(flags, TCP_FLG_FIN))
+    }
+    if (TCP_FLG_ISSET(flags, TCP_FLG_FIN)) {
         res += 1;
+    }
     return res;
 }
 
@@ -114,7 +121,19 @@ static inline void tcp_close_connection(uint8_t remote_ip[NET_IP_LEN], uint16_t 
  */
 void tcp_out(tcp_conn_t *tcp_conn, buf_t *buf, uint16_t src_port, uint8_t *dst_ip, uint16_t dst_port, uint8_t flags) {
     /* =============================== TODO 1 BEGIN =============================== */
-
+    buf_add_header(buf, sizeof(tcp_hdr_t));
+    tcp_hdr_t *tcp_hdr = (tcp_hdr_t *)buf->data;
+    tcp_hdr->src_port16 = htons(src_port);
+    tcp_hdr->dst_port16 = htons(dst_port);
+    tcp_hdr->seq = htonl(tcp_conn->seq);
+    tcp_hdr->ack = htonl(tcp_conn->ack);
+    tcp_hdr->doff = (sizeof(tcp_hdr_t) / 4) << 4;
+    tcp_hdr->flags = flags;
+    tcp_hdr->win = htons(TCP_MAX_WINDOW_SIZE);
+    tcp_hdr->checksum16 = 0;
+    tcp_hdr->uptr = 0;
+    tcp_hdr->checksum16 = transport_checksum(NET_PROTOCOL_TCP, buf, net_if_ip, dst_ip);
+    ip_out(buf, dst_ip, NET_PROTOCOL_TCP);
     /* =============================== TODO 1 END =============================== */
 }
 
@@ -139,8 +158,8 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
         return;
 
     uint8_t *remote_ip = (uint8_t *)src_ip;
-    uint16_t remote_port = swap16(hdr->src_port16);
-    uint16_t host_port = swap16(hdr->dst_port16);
+    uint16_t remote_port = ntohs(hdr->src_port16);
+    uint16_t host_port = ntohs(hdr->dst_port16);
     tcp_conn_t *tcp_conn = tcp_get_connection(remote_ip, remote_port, host_port, true);
 
     uint8_t recv_flags = hdr->flags;
@@ -150,7 +169,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
         return;
     }
 
-    uint32_t remote_seq = swap32(hdr->seq);
+    uint32_t remote_seq = ntohl(hdr->seq);
     uint32_t tcp_hdr_sz = (hdr->doff >> 4) * 4;
 
     /* =============================== TODO 2 BEGIN =============================== */
@@ -158,7 +177,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
 
     uint8_t send_flags = 0;  // 回复报文的标志位字段
 
-     // 根据当前 TCP 连接的状态进行不同的处理    
+    // 根据当前 TCP 连接的状态进行不同的处理
     switch (tcp_conn->state) {
         case TCP_STATE_LISTEN:
             // TODO: 仅在收到连接报文时（SYN报文）才做出处理，否则直接返回
@@ -210,8 +229,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
     /* Step2 ：如果接收报文携带数据，则将数据部分交付给上层应用 */
     // TODO
 
-
-    /* Step3 ：调用tcp_out()发送回复报文，更新TCP连接序列号。 */
+    /* Step3 ：调用 tcp_out() 发送回复报文，更新TCP连接序列号。 */
     // 如果无需回复，则接收逻辑结束
     if (send_flags == 0)
         return;
@@ -253,8 +271,9 @@ void tcp_send(tcp_conn_t *tcp_conn, uint8_t *data, uint16_t len, uint16_t src_po
     // 发送数据包
     buf_t tx_buf;
     buf_init(&tx_buf, len);
-    if (data)
+    if (data) {
         memcpy(tx_buf.data, data, len);
+    }
     tcp_out(tcp_conn, &tx_buf, src_port, dst_ip, dst_port, TCP_FLG_ACK /* 顺带 ACK */);
 
     // 更新序列号

@@ -43,7 +43,7 @@ typedef struct tcp_connection {
     uint8_t not_send_empty_ack;
 
     /* TCP communication states */
-    int port;
+    int port; // 连接对应的本地端口号
     uint32_t seq;  // 要发送的序列号
     uint32_t ack;  // 要发送的 ACK
 } tcp_conn_t;

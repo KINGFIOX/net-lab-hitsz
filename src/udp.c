@@ -5,7 +5,6 @@
 #include "ip.h"
 #include "map.h"
 #include "net.h"
-#include "testing/log.h"
 #include "utils.h"
 
 #include <netinet/in.h>
