@@ -4,6 +4,7 @@
 #include "ethernet.h"
 #include "map.h"
 #include "net.h"
+#include "testing/log.h"
 
 #include <netinet/in.h>
 #include <stdint.h>
@@ -62,8 +63,8 @@ void arp_print() {
  */
 void arp_req(const uint8_t *target_ip) {
     buf_init(&txbuf, sizeof(arp_pkt_t));
-    memcpy(txbuf.data, &arp_init_pkt, sizeof(arp_init_pkt));
     arp_pkt_t *pkt = (arp_pkt_t *)txbuf.data;
+    memcpy(pkt, &arp_init_pkt, sizeof(arp_init_pkt));
     pkt->opcode16 = htons(ARP_REQUEST);
     memcpy(pkt->target_ip, target_ip, NET_IP_LEN);
     memset(pkt->target_mac, 0, NET_MAC_LEN);
@@ -78,11 +79,18 @@ void arp_req(const uint8_t *target_ip) {
  */
 void arp_resp(const uint8_t *target_ip, const uint8_t *target_mac) {
     buf_init(&txbuf, sizeof(arp_pkt_t));
-    memcpy(txbuf.data, &arp_init_pkt, sizeof(arp_init_pkt));
     arp_pkt_t * pkt = (arp_pkt_t *)txbuf.data;
+    memcpy(pkt, &arp_init_pkt, sizeof(arp_pkt_t));
     pkt->opcode16 = htons(ARP_REPLY);
-    memcpy(pkt, target_ip, NET_IP_LEN);
-    memcpy(pkt, target_mac, NET_MAC_LEN);
+    memcpy(pkt->target_ip, target_ip, NET_IP_LEN);
+    memcpy(pkt->target_mac, target_mac, NET_MAC_LEN);
+    printf(BLUE);
+    putchar('\n');
+    for (int i = 0; i < txbuf.len; i++) {
+        printf("%02x ", txbuf.data[i]);
+    }
+    putchar('\n');
+    printf(RESET);
     ethernet_out(&txbuf, target_mac, NET_PROTOCOL_ARP);
 }
 
@@ -94,10 +102,10 @@ void arp_resp(const uint8_t *target_ip, const uint8_t *target_mac) {
  */
 void arp_in(buf_t *buf, const uint8_t *src_mac) {
     // TO-DO
-    if (buf->len < 2 + 2 + 1 + 1 + 2) {
-        // DROP
-        return;
-    }
+    // if (buf->len < 2 + 2 + 1 + 1 + 2) {
+    //     // DROP
+    //     return;
+    // }
     arp_pkt_t * pkt = (arp_pkt_t *)buf->data;
     // some check
     if (pkt->hw_type16 != htons(ARP_HW_ETHER)) {

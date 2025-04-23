@@ -60,7 +60,7 @@ void icmp_in(buf_t *buf, const uint8_t *src_ip) {
  */
 void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code) {
     // TO-DO
-    buf_init(&txbuf, recv_buf->len);
+    buf_init(&txbuf, sizeof(icmp_hdr_t) + sizeof(ip_hdr_t) + 8);
     icmp_hdr_t *icmp_hdr = (icmp_hdr_t *)txbuf.data;
     icmp_hdr->type = 0x3;  // 协议不可达, 端口不可达
     icmp_hdr->code = code;

@@ -10,6 +10,7 @@
 
 #include <netinet/in.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 /**
  * @brief 处理一个收到的数据包
@@ -17,14 +18,11 @@
  * @param buf 要处理的数据包
  */
 void ethernet_in(buf_t *buf) {
-    uint8_t *ptr = buf->data;
-    ptr += 6;
+    ether_hdr_t *ether_hdr = (ether_hdr_t *)buf->data;
     uint8_t src_mac[6];
-    memcpy(src_mac, ptr, NET_MAC_LEN);
-    ptr += 6;
-    uint16_t protocol = ntohs(*(uint16_t *)ptr);
-    ptr += 2;
-    buf_remove_header(buf, 14);
+    memcpy(src_mac, ether_hdr->src, NET_MAC_LEN);
+    uint16_t protocol = ntohs(ether_hdr->protocol16);
+    buf_remove_header(buf, sizeof(ether_hdr_t));
     net_in(buf, protocol, src_mac);
 }
 /**
@@ -39,14 +37,16 @@ void ethernet_out(buf_t *buf, const uint8_t *mac, net_protocol_t protocol) {
         int pad_len = ETHERNET_MIN_TRANSPORT_UNIT - buf->len;
         buf_add_padding(buf, pad_len);
     }
-    buf_add_header(buf, 14);
-    uint8_t *ptr = buf->data;
-    memcpy(ptr, mac, NET_MAC_LEN);
-    ptr += 6;
-    memcpy(ptr, net_if_mac, NET_MAC_LEN);
-    ptr += 6;
-    uint16_t protocol_num = htons(protocol);
-    memcpy(ptr, &protocol_num, 2);
+    buf_add_header(buf, sizeof(ether_hdr_t));
+    ether_hdr_t *ether_hdr = (ether_hdr_t *)buf->data;
+    memcpy(ether_hdr->dst, mac, NET_MAC_LEN);
+    memcpy(ether_hdr->src, net_if_mac, NET_MAC_LEN);
+    ether_hdr->protocol16 = htons(protocol);
+    putchar('\n');
+    for (int i = 0; i < buf->len; i++) {
+        printf("%02x ", buf->data[i]);
+    }
+    putchar('\n');
     driver_send(buf);
 }
 /**
