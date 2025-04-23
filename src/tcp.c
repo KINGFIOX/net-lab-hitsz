@@ -160,6 +160,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
     uint8_t *remote_ip = (uint8_t *)src_ip;
     uint16_t remote_port = ntohs(hdr->src_port16);
     uint16_t host_port = ntohs(hdr->dst_port16);
+    // table caches the connection. when there is no connection, create a new one
     tcp_conn_t *tcp_conn = tcp_get_connection(remote_ip, remote_port, host_port, true);
 
     uint8_t recv_flags = hdr->flags;
@@ -176,27 +177,36 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
     /* Step1 ：根据接收包数据更新当前TCP连接内部状态，并填写回复报文的标志部分。 */
 
     uint8_t send_flags = 0;  // 回复报文的标志位字段
+    size_t data_len = 0;
 
     // 根据当前 TCP 连接的状态进行不同的处理
     switch (tcp_conn->state) {
         case TCP_STATE_LISTEN:
             // TODO: 仅在收到连接报文时（SYN报文）才做出处理，否则直接返回
-
-            // TODO: 初始化 TCP 连接上下文（tcp_conn结构体）的seq字段
-
-            // TODO: 填写 TCP 连接上下文（tcp_conn结构体）的ack字段
-
+            if (!TCP_FLG_ISSET(recv_flags, TCP_FLG_SYN)) {
+                return;
+            }
+// TODO: 初始化 TCP 连接上下文（tcp_conn结构体）的seq字段
+#if TEST
+            tcp_conn->seq = 0;  // 方便与参考答案对比
+#else
+            tcp_conn->seq = tcp_generate_initial_seq();
+#endif
             // TODO: 填写回复标志 send_flags
-
+            send_flags = TCP_FLG_SYN | TCP_FLG_ACK;
+            // TODO: 填写 TCP 连接上下文（tcp_conn结构体）的ack字段
+            tcp_conn->ack = bytes_in_flight(remote_seq, send_flags);
             // TODO: 进行状态转移
-
+            tcp_conn->state = TCP_STATE_SYN_RECEIVED;
             break;
 
         case TCP_STATE_SYN_RECEIVED:
             // TODO: 仅在收到确认报文时（ACK报文）才做出处理，否则直接返回
-
+            if (!TCP_FLG_ISSET(recv_flags, TCP_FLG_ACK)) {
+                return;
+            }
             // TODO: 进行状态转移
-
+            tcp_conn->state = TCP_STATE_ESTABLISHED;
             break;
 
         case TCP_STATE_ESTABLISHED:
@@ -207,18 +217,26 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
                 return;
             }
             // TODO: 计算接收到的数据长度，更新 ACK
-
+            data_len = buf->len - tcp_hdr_sz;
+            tcp_conn->ack += bytes_in_flight(data_len, recv_flags); // include FIN
             // TODO: 如果接收报文携带数据，则填写回复标志 send_flags 发送ACK
-
+            if (data_len > 0) {
+                send_flags = TCP_FLG_ACK;
+            }
             // TODO: 如果收到 FIN 报文，则增加 send_flags 相应标志位，并且进行状态转移
-
+            if (TCP_FLG_ISSET(recv_flags, TCP_FLG_FIN)) {
+                send_flags = TCP_FLG_ACK;
+                tcp_conn->state = TCP_STATE_CLOSE_WAIT;
+            }
             break;
 
         case TCP_STATE_LAST_ACK:
             // TODO: 仅在收到确认报文时（ACK报文）才做出处理，否则直接返回
-
+            if (!TCP_FLG_ISSET(recv_flags, TCP_FLG_ACK)) {
+                return;
+            }
             // TODO: 关闭 TCP 连接
-
+            tcp_close_connection(remote_ip, remote_port, host_port);
             break;
 
         default:
@@ -228,21 +246,36 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
 
     /* Step2 ：如果接收报文携带数据，则将数据部分交付给上层应用 */
     // TODO
+    if (data_len > 0) {
+        tcp_handler_t *handler = map_get(&tcp_handler_table, &host_port);
+        if (handler) {
+            (*handler)(tcp_conn, buf->data + tcp_hdr_sz, data_len, remote_ip, remote_port);
+        }
+    }
 
     /* Step3 ：调用 tcp_out() 发送回复报文，更新TCP连接序列号。 */
     // 如果无需回复，则接收逻辑结束
     if (send_flags == 0)
         return;
-    // 如果 send_flags 只标识了 ACK 字段，并且应用程序已通过 tcp_send() 发送顺带 ACK，则无需再进行回复
+    // 能走下来说明了几种情况(也就是需要回复的情况)
+    // 1. listen_state, recv SYN, should reply SYN ACK
+    // 2. cli 发来报文中有数据. 需要 reply ACK
+    // 3. cli 发来 FIN, 需要 reply ACK
+    // 如果 send_flags 只标识了 ACK 字段 <=> bytes_in_flight(0, send_flags) == 0 && send_flags != 0
+    // 应用程序已通过 tcp_send() 发送顺带 ACK，则无需再进行回复 <=> tcp_conn->not_send_empty_ack == 1
     if (bytes_in_flight(0, send_flags) == 0 && tcp_conn->not_send_empty_ack) {
         assert(TCP_FLG_ISSET(send_flags, TCP_FLG_ACK));
         tcp_conn->not_send_empty_ack = 0;
         return;
     }
 
-    // TODO:  初始化一个新的缓冲区，发送回复报文
-
+    // TODO:  初始化一个新的缓冲区，发送回复报文, with no payload
+    static buf_t reply_buf;
+    buf_init(&reply_buf, 0);
     // TODO: 更新序列号
+    tcp_conn->seq += bytes_in_flight(0, send_flags);
+    // TODO: 调用 tcp_out() 发送回复报文
+    tcp_out(tcp_conn, &reply_buf, host_port, remote_ip, remote_port, send_flags);
 
     /* =============================== TODO 2 END =============================== */
 }
