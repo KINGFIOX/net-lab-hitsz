@@ -35,7 +35,7 @@ void ip_in(buf_t *buf, const uint8_t *src_mac) {
     // check checksum
     uint16_t checksum = ip_hdr->hdr_checksum16;
     ip_hdr->hdr_checksum16 = 0;
-    if (checksum16((uint16_t *)ip_hdr, ip_hdr_len) != checksum) {
+    if (checksum16((uint16_t *)ip_hdr, (ip_hdr_len >> 1)) != checksum) {
         return;  // drop, checksum error
     }
     ip_hdr->hdr_checksum16 = checksum;
@@ -51,7 +51,6 @@ void ip_in(buf_t *buf, const uint8_t *src_mac) {
     buf_remove_header(buf, ip_hdr_len);
     // call protocol handler
     uint8_t protocol = ip_hdr->protocol;
-    printf("ip_in: protocol = %d\n", protocol);
     int ret = net_in(buf, protocol, ip_hdr->src_ip);
     if (ret == -1) {
         buf_add_header(buf, ip_hdr_len);  // restore header
@@ -84,7 +83,7 @@ void ip_fragment_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol, int
     memcpy(ip_hdr->src_ip, net_if_ip, 4);
     memcpy(ip_hdr->dst_ip, ip, 4);
     ip_hdr->hdr_checksum16 = 0;
-    int checksum = checksum16((uint16_t *)ip_hdr, sizeof(ip_hdr_t));
+    int checksum = checksum16((uint16_t *)ip_hdr, (sizeof(ip_hdr_t) >> 1));
     ip_hdr->hdr_checksum16 = checksum;
     arp_out(buf, ip);
 }

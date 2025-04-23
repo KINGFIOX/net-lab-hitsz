@@ -9,10 +9,10 @@ extern FILE *udp_fout;
 char *print_ip(uint8_t *ip);
 void fprint_buf(FILE *f, buf_t *buf);
 
-void udp_out(buf_t *buf, uint16_t src_port, uint8_t *dest_ip, uint16_t dest_port) {
+void udp_out(buf_t *buf, uint16_t src_port, const uint8_t *dest_ip, uint16_t dest_port) {
     fprintf(udp_fout, "udp_out:\n");
     fprintf(udp_fout, "\tsrc_port: %d\n", src_port);
-    fprintf(udp_fout, "\tdest_ip: %s\n", print_ip(dest_ip));
+    fprintf(udp_fout, "\tdest_ip: %s\n", print_ip((uint8_t *)dest_ip));
     fprintf(udp_fout, "\tdest_port: %d\n", dest_port);
     fprint_buf(udp_fout, buf);
 }
@@ -31,10 +31,10 @@ void udp_close(uint16_t port) {
     fprintf(udp_fout, "udp_close: port:%d\n", port);
 }
 
-void udp_send(uint8_t *data, uint16_t len, uint16_t src_port, uint8_t *dest_ip, uint16_t dest_port) {
+void udp_send(uint8_t *data, uint16_t len, uint16_t src_port, const uint8_t *dest_ip, uint16_t dest_port) {
     fprintf(udp_fout, "udp_send:\n\tlen:%d\n", len);
     fprintf(udp_fout, "\tsrc_port:%d\n", src_port);
-    fprintf(udp_fout, "\tdest_ip:%s\n", print_ip(dest_ip));
+    fprintf(udp_fout, "\tdest_ip:%s\n", print_ip((uint8_t *)dest_ip));
     fprintf(udp_fout, "\tdest_port:%d\n", dest_port);
     fprintf(udp_fout, "\tdata:");
     if (data) {

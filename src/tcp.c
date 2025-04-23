@@ -1,8 +1,5 @@
 #include "tcp.h"
 
-#include "icmp.h"
-#include "ip.h"
-
 #include <assert.h>
 #include <stdbool.h>
 
@@ -141,7 +138,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
     if (transport_checksum(NET_PROTOCOL_TCP, buf, src_ip, net_if_ip) != checksum)
         return;
 
-    uint8_t *remote_ip = src_ip;
+    uint8_t *remote_ip = (uint8_t *)src_ip;
     uint16_t remote_port = swap16(hdr->src_port16);
     uint16_t host_port = swap16(hdr->dst_port16);
     tcp_conn_t *tcp_conn = tcp_get_connection(remote_ip, remote_port, host_port, true);

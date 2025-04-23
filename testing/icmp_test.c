@@ -1,9 +1,7 @@
-#include "arp.h"
 #include "driver.h"
 #include "ethernet.h"
 #include "ip.h"
 #include "testing/log.h"
-#include <signal.h>
 
 #include <string.h>
 

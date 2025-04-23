@@ -1,7 +1,5 @@
-#include "arp.h"
 #include "driver.h"
 #include "ethernet.h"
-#include "ip.h"
 #include "udp.h"
 #include "testing/log.h"
 
@@ -29,7 +27,7 @@ FILE *open_file(char *path, char *name, char *mode);
 
 void log_tab_buf();
 
-void udp_handler(uint8_t *data, size_t len, uint8_t *src_ip, uint16_t src_port) {
+void udp_handler(uint8_t *data, size_t len, const uint8_t *src_ip, uint16_t src_port) {
     printf("recv udp packet from %s:%u len=%zu\n", iptos(src_ip), src_port, len);
     for (int i = 0; i < len; i++)
         putchar(data[i]);

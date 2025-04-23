@@ -21,7 +21,7 @@ void icmp_in(buf_t *buf, const uint8_t *src_ip) {
     fprint_buf(icmp_fout, buf);
 }
 
-void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code) {
+void icmp_unreachable(buf_t *recv_buf, const uint8_t *src_ip, icmp_code_t code) {
     fprintf(icmp_fout, "icmp_unreachable:\n");
     fprintf(icmp_fout, "\tip: %s\n", src_ip ? print_ip(src_ip) : "null");
     fprintf(icmp_fout, "\tcode: %d\n", code);

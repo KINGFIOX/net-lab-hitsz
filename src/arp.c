@@ -4,7 +4,6 @@
 #include "ethernet.h"
 #include "map.h"
 #include "net.h"
-#include "testing/log.h"
 
 #include <netinet/in.h>
 #include <stdint.h>
