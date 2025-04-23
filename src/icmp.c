@@ -5,6 +5,7 @@
 #include "net.h"
 #include "utils.h"
 
+#include <stdio.h>
 #include <string.h>
 
 /**
@@ -15,16 +16,15 @@
  */
 static void icmp_resp(buf_t *req_buf, const uint8_t *src_ip) {
     // TO-DO
-    buf_init(&txbuf, req_buf->len);
+    icmp_hdr_t *req_hdr = (icmp_hdr_t *)req_buf->data;
+    int len = req_buf->len;
+    buf_init(&txbuf, len);
     icmp_hdr_t *icmp_hdr = (icmp_hdr_t *)txbuf.data;
+    memcpy(icmp_hdr, req_hdr, len);
     icmp_hdr->type = 0x0;  // echo reply
     icmp_hdr->code = 0x0;
     icmp_hdr->checksum16 = 0;
-    icmp_hdr->id16 = 0;
-    icmp_hdr->seq16 = ((icmp_hdr_t *)req_buf)->seq16;  // just copy
-    icmp_hdr->id16 = ((icmp_hdr_t *)req_buf)->id16;
-    memcpy(icmp_hdr + 1, ((icmp_hdr_t *)req_buf) + 1, req_buf->len - sizeof(icmp_hdr_t));
-    icmp_hdr->checksum16 = checksum16(icmp_hdr, req_buf->len);
+    icmp_hdr->checksum16 = checksum16(icmp_hdr, len);
     ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
 }
 
@@ -39,6 +39,8 @@ void icmp_in(buf_t *buf, const uint8_t *src_ip) {
     if (buf->len < sizeof(icmp_hdr_t)) {
         return;  // drop, non integrity
     }
+    putchar('\n');
+    printf("icmp_in: type = %d, code = %d\n", icmp_hdr->type, icmp_hdr->code);
     uint16_t type_code = (icmp_hdr->type << 8) | (icmp_hdr->code);
     switch (type_code) {
         case 0x80:  // echo request
