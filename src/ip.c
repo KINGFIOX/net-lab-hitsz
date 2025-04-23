@@ -51,6 +51,7 @@ void ip_in(buf_t *buf, const uint8_t *src_mac) {
     buf_remove_header(buf, ip_hdr_len);
     // call protocol handler
     uint8_t protocol = ip_hdr->protocol;
+    printf("ip_in: protocol = %d\n", protocol);
     int ret = net_in(buf, protocol, ip_hdr->src_ip);
     if (ret == -1) {
         buf_add_header(buf, ip_hdr_len);  // restore header
@@ -98,6 +99,9 @@ void ip_fragment_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol, int
 void ip_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol) {
     // TO-DO
     static int id = 0;
+#ifndef IP_FRAG_TEST
+    id = random();
+#endif
     // id++;            // counter for ip id
     int offset = 0;  // accumulate offset
     int buf_len = buf->len;

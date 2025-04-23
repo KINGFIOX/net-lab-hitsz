@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.0.0)
+cmake_minimum_required(VERSION 3.5.0)
 project(net VERSION 0.1.0)
 
 # Generate compile_commands.json for clangd and other tools
@@ -17,7 +17,7 @@ endif()
 
 set(HTTP_RESOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/app/resource)
 
-add_compile_options(-Wall -g)
+add_compile_options(-Wall -g -O0)
 # add_link_options(-fsanitize=address)
 # set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/test) 
 include_directories(./include ./Npcap/Include)
@@ -119,7 +119,7 @@ add_executable(ip_frag_test
     ${EXTRA_FILE}
 )
 target_link_libraries(ip_frag_test ${PCAP})
-target_compile_definitions(ip_frag_test PUBLIC TEST ICMP UDP)
+target_compile_definitions(ip_frag_test PUBLIC TEST ICMP UDP IP_FRAG_TEST)
 
 add_executable(icmp_test
     testing/icmp_test.c

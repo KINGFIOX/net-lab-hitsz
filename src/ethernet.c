@@ -42,11 +42,13 @@ void ethernet_out(buf_t *buf, const uint8_t *mac, net_protocol_t protocol) {
     memcpy(ether_hdr->dst, mac, NET_MAC_LEN);
     memcpy(ether_hdr->src, net_if_mac, NET_MAC_LEN);
     ether_hdr->protocol16 = htons(protocol);
+#if 0
     putchar('\n');
     for (int i = 0; i < buf->len; i++) {
         printf("%02x ", buf->data[i]);
     }
     putchar('\n');
+#endif
     driver_send(buf);
 }
 /**

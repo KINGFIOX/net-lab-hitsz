@@ -3,6 +3,7 @@
 #include "ethernet.h"
 #include "ip.h"
 #include "testing/log.h"
+#include <signal.h>
 
 #include <string.h>
 
@@ -67,11 +68,19 @@ int main(int argc, char *argv[]) {
             int len = (buf2.data[0] & 0xf) << 2;
             uint8_t *ip = buf.data + 30;
             net_protocol_t pro = buf2.data[9];
+            printf("ip_out: hd_len:%d\tip:%s\tpro:%d\n",len,print_ip(ip),pro);
             memset(buf2.data, 0, sizeof(len));
             buf_remove_header(&buf2, len);
             ip_out(&buf2, ip, pro);
         } else {
+            if (i == 9) {
+                printf(YELLOW);
+                // raise(SIGTRAP);
+            }
             ethernet_in(&buf);
+            if (i == 9) {
+                printf(RESET);
+            }
         }
         log_tab_buf();
     }

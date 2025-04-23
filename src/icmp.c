@@ -24,7 +24,7 @@ static void icmp_resp(buf_t *req_buf, const uint8_t *src_ip) {
     icmp_hdr->type = 0x0;  // echo reply
     icmp_hdr->code = 0x0;
     icmp_hdr->checksum16 = 0;
-    icmp_hdr->checksum16 = checksum16(icmp_hdr, len);
+    icmp_hdr->checksum16 = checksum16((uint16_t *)icmp_hdr, len);
     ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
 }
 
@@ -41,13 +41,8 @@ void icmp_in(buf_t *buf, const uint8_t *src_ip) {
     }
     putchar('\n');
     printf("icmp_in: type = %d, code = %d\n", icmp_hdr->type, icmp_hdr->code);
-    uint16_t type_code = (icmp_hdr->type << 8) | (icmp_hdr->code);
-    switch (type_code) {
-        case 0x80:  // echo request
-            icmp_resp(buf, src_ip);
-            break;
-        default:
-            break;
+    if (icmp_hdr->type == 0x8 && icmp_hdr->code == 0x0) {
+        icmp_resp(buf, src_ip);
     }
 }
 
@@ -68,7 +63,7 @@ void icmp_unreachable(buf_t *recv_buf, uint8_t *src_ip, icmp_code_t code) {
     icmp_hdr->id16 = 0;
     icmp_hdr->seq16 = 0;
     memcpy(icmp_hdr + 1, recv_buf, sizeof(ip_hdr_t) + 8);
-    icmp_hdr->checksum16 = checksum16(icmp_hdr, sizeof(icmp_hdr_t) + sizeof(ip_hdr_t) + 8);
+    icmp_hdr->checksum16 = checksum16((uint16_t *)icmp_hdr, sizeof(icmp_hdr_t) + sizeof(ip_hdr_t) + 8);
     ip_out(&txbuf, src_ip, NET_PROTOCOL_ICMP);
 }
 
