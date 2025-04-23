@@ -9,6 +9,7 @@
 
 #include <netinet/in.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 /**
@@ -67,7 +68,7 @@ void ip_in(buf_t *buf, const uint8_t *src_mac) {
  * @param offset 分片offset，必须被8整除
  * @param mf 分片mf标志，是否有下一个分片
  */
-void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, uint16_t offset, int mf) {
+void ip_fragment_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol, int id, uint16_t offset, int mf) {
     // TO-DO
     buf_add_header(buf, sizeof(ip_hdr_t));
     ip_hdr_t *ip_hdr = (ip_hdr_t *)buf->data;
@@ -94,7 +95,7 @@ void ip_fragment_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol, int id, u
  * @param ip 目标ip地址
  * @param protocol 上层协议
  */
-void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol) {
+void ip_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol) {
     // TO-DO
     static int id = 0;
     // id++;            // counter for ip id

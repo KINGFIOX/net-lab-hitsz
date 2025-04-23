@@ -27,6 +27,6 @@ typedef struct ip_hdr {
 #define IP_MAX_PAYLOAD (NET_MTU - sizeof(ip_hdr_t))
 
 void ip_in(buf_t *buf, const uint8_t *src_mac);
-void ip_out(buf_t *buf, uint8_t *ip, net_protocol_t protocol);
+void ip_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol);
 void ip_init();
 #endif

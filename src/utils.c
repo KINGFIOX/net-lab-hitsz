@@ -1,6 +1,7 @@
 #include "utils.h"
 
 #include "net.h"
+#include "testing/log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -81,6 +82,9 @@ uint16_t checksum16(uint16_t *data, size_t size) {
     }
     // TODO
     int parity = size & 0x1;
+    if (parity) {
+        printf(YELLOW "warning: parity\n" RESET);
+    }
     uint16_t checksum = ~sum;
     return checksum;
 }
