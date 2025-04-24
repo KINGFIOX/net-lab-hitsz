@@ -151,10 +151,11 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
 
     tcp_hdr_t *hdr = (tcp_hdr_t *)buf->data;
 
-    // 校验checksum
+    // 校验 checksum
     uint16_t checksum = hdr->checksum16;
     hdr->checksum16 = 0;
-    if (transport_checksum(NET_PROTOCOL_TCP, buf, src_ip, net_if_ip) != checksum)
+    uint16_t _checksum = transport_checksum(NET_PROTOCOL_TCP, buf, src_ip, net_if_ip);
+    if (_checksum != checksum)
         return;
 
     uint8_t *remote_ip = (uint8_t *)src_ip;
@@ -218,7 +219,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
             }
             // TODO: 计算接收到的数据长度，更新 ACK
             data_len = buf->len - tcp_hdr_sz;
-            tcp_conn->ack += bytes_in_flight(data_len, recv_flags); // include FIN
+            tcp_conn->ack += bytes_in_flight(data_len, recv_flags);  // include FIN
             // TODO: 如果接收报文携带数据，则填写回复标志 send_flags 发送ACK
             if (data_len > 0) {
                 send_flags = TCP_FLG_ACK;
@@ -226,7 +227,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
             // TODO: 如果收到 FIN 报文，则增加 send_flags 相应标志位，并且进行状态转移
             if (TCP_FLG_ISSET(recv_flags, TCP_FLG_FIN)) {
                 send_flags = TCP_FLG_ACK;
-                tcp_conn->state = TCP_STATE_CLOSE_WAIT;
+                tcp_conn->state = TCP_STATE_LAST_ACK;
             }
             break;
 

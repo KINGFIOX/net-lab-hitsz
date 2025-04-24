@@ -45,6 +45,12 @@ add_executable(web_server
 target_link_libraries(web_server ${PCAP})
 target_compile_definitions(web_server PUBLIC HTTP_RESOURCE_DIR="${HTTP_RESOURCE_DIR}" ICMP TCP)
 
+# Add post-build command to set capabilities for web_server
+add_custom_command(TARGET web_server POST_BUILD
+    COMMAND sudo setcap cap_net_raw,cap_net_admin,cap_net_bind_service,cap_sys_ptrace=eip $<TARGET_FILE:web_server>
+    COMMENT "Setting capabilities for web_server"
+)
+
 set(TEST_FIX_SOURCE 
     testing/faker/driver.c 
     testing/global.c

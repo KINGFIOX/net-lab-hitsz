@@ -40,7 +40,7 @@ void icmp_in(buf_t *buf, const uint8_t *src_ip) {
         return;  // drop, non integrity
     }
     putchar('\n');
-    printf("icmp_in: type = %d, code = %d\n", icmp_hdr->type, icmp_hdr->code);
+    // printf("icmp_in: type = %d, code = %d\n", icmp_hdr->type, icmp_hdr->code);
     if (icmp_hdr->type == 0x8 && icmp_hdr->code == 0x0) {
         icmp_resp(buf, src_ip);
     }
