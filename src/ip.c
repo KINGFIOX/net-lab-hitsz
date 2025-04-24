@@ -35,7 +35,7 @@ void ip_in(buf_t *buf, const uint8_t *src_mac) {
     // check checksum
     uint16_t checksum = ip_hdr->hdr_checksum16;
     ip_hdr->hdr_checksum16 = 0;
-    if (checksum16((uint16_t *)ip_hdr, (ip_hdr_len >> 1)) != checksum) {
+    if (checksum16((uint16_t *)ip_hdr, ip_hdr_len) != checksum) {
         return;  // drop, checksum error
     }
     ip_hdr->hdr_checksum16 = checksum;
@@ -83,7 +83,7 @@ void ip_fragment_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol, int
     memcpy(ip_hdr->src_ip, net_if_ip, 4);
     memcpy(ip_hdr->dst_ip, ip, 4);
     ip_hdr->hdr_checksum16 = 0;
-    int checksum = checksum16((uint16_t *)ip_hdr, (sizeof(ip_hdr_t) >> 1));
+    int checksum = checksum16((uint16_t *)ip_hdr, sizeof(ip_hdr_t));
     ip_hdr->hdr_checksum16 = checksum;
     arp_out(buf, ip);
 }

@@ -151,12 +151,12 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
 
     tcp_hdr_t *hdr = (tcp_hdr_t *)buf->data;
 
-    // 校验 checksum
-    uint16_t checksum = hdr->checksum16;
-    hdr->checksum16 = 0;
-    uint16_t _checksum = transport_checksum(NET_PROTOCOL_TCP, buf, src_ip, net_if_ip);
-    if (_checksum != checksum)
-        return;
+    // // 校验 checksum
+    // uint16_t checksum = hdr->checksum16;
+    // hdr->checksum16 = 0;
+    // uint16_t _checksum = transport_checksum(NET_PROTOCOL_TCP, buf, src_ip, net_if_ip);
+    // if (_checksum != checksum)
+    //     return;
 
     uint8_t *remote_ip = (uint8_t *)src_ip;
     uint16_t remote_port = ntohs(hdr->src_port16);
@@ -308,6 +308,7 @@ void tcp_send(tcp_conn_t *tcp_conn, uint8_t *data, uint16_t len, uint16_t src_po
     if (data) {
         memcpy(tx_buf.data, data, len);
     }
+    printf("tcp_send len: %d\n", len);
     tcp_out(tcp_conn, &tx_buf, src_port, dst_ip, dst_port, TCP_FLG_ACK /* 顺带 ACK */);
 
     // 更新序列号

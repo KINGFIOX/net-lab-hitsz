@@ -1,6 +1,7 @@
 #include "driver.h"
 #include "net.h"
 #include "tcp.h"
+
 #include <stdio.h>
 
 #define HTTP_MAX_PATH_LENGTH 1024
@@ -73,7 +74,6 @@ void http_respond(tcp_conn_t *tcp_conn, char *url_path, uint16_t port, uint8_t *
         sprintf(resp_buffer, "Content-Type: text/html; charset=utf-8\r\n");
         tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
 
-
         // TODO: 发送 HTTP 内容长度
         sprintf(resp_buffer, "Content-Length: %d\r\n", strlen(not_found_body));
         tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
@@ -82,43 +82,43 @@ void http_respond(tcp_conn_t *tcp_conn, char *url_path, uint16_t port, uint8_t *
         sprintf(resp_buffer, "\r\n");
         tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
 
-
         // TODO: 发送 HTTP 响应体
         tcp_send(tcp_conn, (uint8_t *)not_found_body, strlen(not_found_body), port, dst_ip, dst_port);
 
         return;
     }
 
-    /* Step2 ：发送 HTTP 请求头 */
-    // TODO: 发送 HTTP 状态行
-    sprintf(resp_buffer, "HTTP/1.1 200 OK\r\n");
-    tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
-
-    // 发送 HTTP 连接信息
-    sprintf(resp_buffer, "Connection: Keep-Alive\r\n");
-    tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
+    size_t offset = 0;
 
     const char *content_type = http_get_mime_type(file_path);
-    // TODO: 发送 HTTP 内容类型，根据文件类型设置 MIME 类型
-    sprintf(resp_buffer, "Content-Type: %s\r\n", content_type);
-    tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
-
     fseek(file, 0, SEEK_END);
     size_t content_length = ftell(file);
     fseek(file, 0, SEEK_SET);
-    // TODO: 发送 HTTP 内容长度
-    sprintf(resp_buffer, "Content-Length: %d\r\n", content_length);
-    tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
 
-    // TODO: 发送 HTTP 响应头与响应体的分隔符
-    sprintf(resp_buffer, "\r\n");
-    tcp_send(tcp_conn, (uint8_t *)resp_buffer, strlen(resp_buffer), port, dst_ip, dst_port);
+#define CRLF "\r\n"
 
+    /* Step2 ：发送 HTTP 请求头 */
+    // TODO: 发送 HTTP 状态行
+    offset += sprintf(resp_buffer + offset, "HHTTP/1.1 200 OK" CRLF);
+    offset += sprintf(resp_buffer + offset, "Connection: Keep-Alive" CRLF);
+    offset += sprintf(resp_buffer + offset, "Content-Type: %s" CRLF, content_type);
+    offset += sprintf(resp_buffer + offset, "Content-Length: %zu" CRLF, content_length);
+    offset += sprintf(resp_buffer + offset, CRLF);
+    tcp_send(tcp_conn, (uint8_t *)resp_buffer, offset, port, dst_ip, dst_port);
+
+    // 4. 打印调试信息，用十六进制显示确保换行符正确
+    printf("=== HTTP Headers (hex) ===\n");
+    for (size_t i = 0; i < offset; i++) {
+        printf("%02x ", (unsigned char)resp_buffer[i]);
+        if ((i + 1) % 16 == 0)
+            printf("\n");
+    }
+    printf("\n=== HTTP Headers (text) ===\n%s", resp_buffer);
+    printf("http_repond length: %zu\n", offset);
 
     /* Step3 ：发送 HTTP 响应体 */
     size_t bytes_read;
     while ((bytes_read = fread(resp_buffer, 1, sizeof(resp_buffer), file)) > 0) {
-        // TODO: 每次发送读取的文件内容块
         tcp_send(tcp_conn, (uint8_t *)resp_buffer, bytes_read, port, dst_ip, dst_port);
     }
 
@@ -151,7 +151,7 @@ void http_request_handler(tcp_conn_t *tcp_conn, uint8_t *data, size_t len, uint8
 
 int main(int argc, char const *argv[]) {
     printf("Starting web server...\n");
-    
+
     if (net_init() == -1) {  // 初始化协议栈
         printf("net init failed.\n");
         return -1;

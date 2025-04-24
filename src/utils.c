@@ -75,16 +75,20 @@ uint8_t ip_prefix_match(const uint8_t *ipa, const uint8_t *ipb) {
  * @return uint16_t 校验和
  */
 uint16_t checksum16(uint16_t *data, size_t len) {
-    // TO-DO
     uint32_t sum = 0;
-    for (size_t i = 0; i < len; i++) {
-        sum += data[i];
-        if (sum > 0x0000ffff) {
-            sum = (sum & 0x0000ffff) + (sum >> 16);
-        }
+    while (len > 1) {
+        sum += *data++;
+        len -= 2;
+        while (sum >> 16)
+            sum = (sum >> 16) + (sum & 0xffff);
     }
-    uint16_t checksum = ~sum;
-    return checksum;
+    if (len)
+        sum += *(uint8_t *)data;
+    while (sum >> 16)
+        sum = (sum >> 16) + (sum & 0xffff);
+    sum = (uint16_t)sum;
+    sum = ~sum;
+    return (uint16_t)sum;
 }
 
 #pragma pack(1)
@@ -109,32 +113,35 @@ typedef struct peso_hdr {
 uint16_t transport_checksum(uint8_t protocol, buf_t *buf, const uint8_t *src_ip, const uint8_t *dst_ip) {
     // TO-DO
     // saved the old ip_hdr
-    static peso_hdr_t reserved;
-#if 0
-    putchar('\n');
-    printf(BLUE);
-    printf("old_ip_hdr:\n");
-    for (int i = 0; i < sizeof(ip_hdr_t); i++) {
-        printf("%02x ", ((uint8_t *)&old_ip_hdr)[i]);
-    }
-    putchar('\n');
-    printf(RESET);
-#endif
-    uint16_t udp_len = buf->len;
     buf_add_header(buf, sizeof(peso_hdr_t));
-    uint16_t total_len = buf->len;
-    peso_hdr_t *peso_hdr = (peso_hdr_t *)buf->data;
-    memcpy(&reserved, peso_hdr, sizeof(peso_hdr_t)); // reserved
-    memcpy(peso_hdr->src_ip, src_ip, NET_IP_LEN);
-    memcpy(peso_hdr->dst_ip, dst_ip, NET_IP_LEN);
-    peso_hdr->placeholder = 0;
-    peso_hdr->protocol = protocol;
-    peso_hdr->total_len16 = htons(udp_len);
-    int parity = (total_len % 2 == 1); // buf->len include the peso_hdr_t
-    buf_add_padding(buf, parity);
-    uint16_t checksum = checksum16((uint16_t *)peso_hdr, ((total_len + parity) >> 1));
-    buf_remove_padding(buf, parity);
+
+    // 暂存IP首部
+    peso_hdr_t ip_hdr; // particial ip_hdr
+    memcpy(&ip_hdr, buf->data, sizeof(peso_hdr_t));
+
+    // 填充伪首部
+    peso_hdr_t udp_peso_hdr;
+    memcpy(udp_peso_hdr.src_ip, src_ip, NET_IP_LEN);
+    memcpy(udp_peso_hdr.dst_ip, dst_ip, NET_IP_LEN);
+    udp_peso_hdr.placeholder = 0;
+    udp_peso_hdr.protocol = protocol;
+    udp_peso_hdr.total_len16 = swap16(buf->len - sizeof(peso_hdr_t));
+    memcpy(buf->data, &udp_peso_hdr, sizeof(peso_hdr_t));
+
+    int paddled = 0;
+    if(buf->len % 2) {
+        buf_add_padding(buf, 1);
+        paddled = 1;
+    }
+
+    // 计算校验和
+    uint16_t checksum = checksum16((uint16_t *)buf->data, buf->len);
+
+    // 恢复IP数据
+    memcpy(buf->data, &ip_hdr, sizeof(peso_hdr_t));
     buf_remove_header(buf, sizeof(peso_hdr_t));
-    memcpy(peso_hdr, &reserved, sizeof(peso_hdr_t));
+    
+    if(paddled) buf_remove_padding(buf, 1);
+
     return checksum;
 }
