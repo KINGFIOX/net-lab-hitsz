@@ -151,12 +151,21 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
 
     tcp_hdr_t *hdr = (tcp_hdr_t *)buf->data;
 
-    // // 校验 checksum
-    // uint16_t checksum = hdr->checksum16;
-    // hdr->checksum16 = 0;
-    // uint16_t _checksum = transport_checksum(NET_PROTOCOL_TCP, buf, src_ip, net_if_ip);
-    // if (_checksum != checksum)
-    //     return;
+    // 校验 checksum
+    uint16_t checksum16 = hdr->checksum16;
+    hdr->checksum16 = 0;
+    uint16_t cal_checksum = transport_checksum(NET_PROTOCOL_TCP, buf, src_ip, net_if_ip);
+    if (checksum16 != cal_checksum) {
+        printf("checksum error, actual: 0b%016b, expected: %016b\n", checksum16, cal_checksum);
+#define RESET "\e[0m"
+#define BLUE "\e[0;34m"
+        printf(BLUE);
+        for (int i = 0; i < buf->len; i++) {
+            printf("%02x ", buf->data[i]);
+        }
+        printf("\n" RESET);
+        // return;  // drop
+    }
 
     uint8_t *remote_ip = (uint8_t *)src_ip;
     uint16_t remote_port = ntohs(hdr->src_port16);
@@ -206,6 +215,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
             if (!TCP_FLG_ISSET(recv_flags, TCP_FLG_ACK)) {
                 return;
             }
+            tcp_conn->seq += 1;
             // TODO: 进行状态转移
             tcp_conn->state = TCP_STATE_ESTABLISHED;
             break;

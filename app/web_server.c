@@ -99,7 +99,7 @@ void http_respond(tcp_conn_t *tcp_conn, char *url_path, uint16_t port, uint8_t *
 
     /* Step2 ：发送 HTTP 请求头 */
     // TODO: 发送 HTTP 状态行
-    offset += sprintf(resp_buffer + offset, "HHTTP/1.1 200 OK" CRLF);
+    offset += sprintf(resp_buffer + offset, "HTTP/1.1 200 OK" CRLF);
     offset += sprintf(resp_buffer + offset, "Connection: Keep-Alive" CRLF);
     offset += sprintf(resp_buffer + offset, "Content-Type: %s" CRLF, content_type);
     offset += sprintf(resp_buffer + offset, "Content-Length: %zu" CRLF, content_length);

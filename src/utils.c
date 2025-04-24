@@ -59,7 +59,7 @@ uint8_t ip_prefix_match(const uint8_t *ipa, const uint8_t *ipb) {
         uint8_t flag = ipa[i] ^ ipb[i];
         for (size_t j = 0; j < 8; j++) {
             if (flag & (1 << 7))
-                return count; // first bit not match
+                return count;  // first bit not match
             else
                 count++, flag <<= 1;
         }
@@ -112,24 +112,24 @@ typedef struct peso_hdr {
  */
 uint16_t transport_checksum(uint8_t protocol, buf_t *buf, const uint8_t *src_ip, const uint8_t *dst_ip) {
     // TO-DO
+    size_t udp_len = buf->len;
     // saved the old ip_hdr
     buf_add_header(buf, sizeof(peso_hdr_t));
+    peso_hdr_t *udp_peso_hdr = (peso_hdr_t *)buf->data;
 
     // 暂存IP首部
-    peso_hdr_t ip_hdr; // particial ip_hdr
-    memcpy(&ip_hdr, buf->data, sizeof(peso_hdr_t));
+    peso_hdr_t ip_hdr;  // particial ip_hdr
+    memcpy(&ip_hdr, udp_peso_hdr, sizeof(peso_hdr_t));
 
     // 填充伪首部
-    peso_hdr_t udp_peso_hdr;
-    memcpy(udp_peso_hdr.src_ip, src_ip, NET_IP_LEN);
-    memcpy(udp_peso_hdr.dst_ip, dst_ip, NET_IP_LEN);
-    udp_peso_hdr.placeholder = 0;
-    udp_peso_hdr.protocol = protocol;
-    udp_peso_hdr.total_len16 = swap16(buf->len - sizeof(peso_hdr_t));
-    memcpy(buf->data, &udp_peso_hdr, sizeof(peso_hdr_t));
+    memcpy(udp_peso_hdr->src_ip, src_ip, NET_IP_LEN);
+    memcpy(udp_peso_hdr->dst_ip, dst_ip, NET_IP_LEN);
+    udp_peso_hdr->placeholder = 0;
+    udp_peso_hdr->protocol = protocol;
+    udp_peso_hdr->total_len16 = htons(udp_len);
 
     int paddled = 0;
-    if(buf->len % 2) {
+    if (buf->len % 2) {
         buf_add_padding(buf, 1);
         paddled = 1;
     }
@@ -138,10 +138,11 @@ uint16_t transport_checksum(uint8_t protocol, buf_t *buf, const uint8_t *src_ip,
     uint16_t checksum = checksum16((uint16_t *)buf->data, buf->len);
 
     // 恢复IP数据
-    memcpy(buf->data, &ip_hdr, sizeof(peso_hdr_t));
+    memcpy(udp_peso_hdr, &ip_hdr, sizeof(peso_hdr_t));
     buf_remove_header(buf, sizeof(peso_hdr_t));
-    
-    if(paddled) buf_remove_padding(buf, 1);
+
+    if (paddled)
+        buf_remove_padding(buf, 1);
 
     return checksum;
 }

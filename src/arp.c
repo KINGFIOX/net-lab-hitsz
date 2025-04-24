@@ -83,15 +83,6 @@ void arp_resp(const uint8_t *target_ip, const uint8_t *target_mac) {
     pkt->opcode16 = htons(ARP_REPLY);
     memcpy(pkt->target_ip, target_ip, NET_IP_LEN);
     memcpy(pkt->target_mac, target_mac, NET_MAC_LEN);
-#if 0
-    printf(BLUE);
-    putchar('\n');
-    for (int i = 0; i < txbuf.len; i++) {
-        printf("%02x ", txbuf.data[i]);
-    }
-    putchar('\n');
-    printf(RESET);
-#endif
     ethernet_out(&txbuf, target_mac, NET_PROTOCOL_ARP);
 }
 
