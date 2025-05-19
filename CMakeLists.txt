@@ -153,6 +153,19 @@ add_executable(udp_test
 target_link_libraries(udp_test ${PCAP})
 target_compile_definitions(udp_test PUBLIC TEST ICMP UDP)
 
+add_executable(mine_test
+    testing/mine_test.c
+    src/ethernet.c
+    src/arp.c
+    src/ip.c
+    src/icmp.c
+    src/udp.c
+    ${TEST_FIX_SOURCE}
+    ${EXTRA_FILE}
+)
+target_link_libraries(mine_test ${PCAP})
+target_compile_definitions(mine_test PUBLIC TEST ICMP UDP MINE)
+
 add_executable(tcp_test
     testing/tcp_test.c
     src/ethernet.c
@@ -206,6 +219,11 @@ add_test(
 add_test(
     NAME tcp_test
     COMMAND $<TARGET_FILE:tcp_test> ${CMAKE_CURRENT_LIST_DIR}/testing/data/tcp_test
+)
+
+add_test(
+    NAME mine_test
+    COMMAND $<TARGET_FILE:mine_test> ${CMAKE_CURRENT_LIST_DIR}/testing/data/mine_test
 )
 
 message("Executable files is in ${EXECUTABLE_OUTPUT_PATH}.")

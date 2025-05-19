@@ -85,7 +85,12 @@ void ip_fragment_out(buf_t *buf, const uint8_t *ip, net_protocol_t protocol, int
     ip_hdr->hdr_checksum16 = 0;
     int checksum = checksum16((uint16_t *)ip_hdr, sizeof(ip_hdr_t));
     ip_hdr->hdr_checksum16 = checksum;
+#ifdef MINE
+    extern uint8_t dst_mac[];
+    ethernet_out(buf, dst_mac, NET_PROTOCOL_IP);
+#else
     arp_out(buf, ip);
+#endif
 }
 
 /**
