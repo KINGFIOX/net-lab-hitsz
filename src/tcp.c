@@ -236,7 +236,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
             }
             // TODO: 如果收到 FIN 报文，则增加 send_flags 相应标志位，并且进行状态转移
             if (TCP_FLG_ISSET(recv_flags, TCP_FLG_FIN)) {
-                send_flags = TCP_FLG_ACK;
+                send_flags = TCP_FLG_ACK | TCP_FLG_FIN;
                 tcp_conn->state = TCP_STATE_LAST_ACK;
             }
             break;
@@ -284,7 +284,7 @@ void tcp_in(buf_t *buf, const uint8_t *src_ip) {
     static buf_t reply_buf;
     buf_init(&reply_buf, 0);
     // TODO: 更新序列号
-    tcp_conn->seq += bytes_in_flight(0, send_flags);
+    // tcp_conn->seq += bytes_in_flight(0, send_flags);
     // TODO: 调用 tcp_out() 发送回复报文
     tcp_out(tcp_conn, &reply_buf, host_port, remote_ip, remote_port, send_flags);
 
