@@ -58,8 +58,8 @@ int driver_find(const uint8_t *ip, char *if_name, uint8_t *mask) {
                 // get the length of the longest prefix of ip(passed in) and the ip(the interface has)
                 match[if_num] = ip_prefix_match(ip, (uint8_t *)&((struct sockaddr_in *)a->addr)->sin_addr.s_addr);
                 // check, if the ip(passed in) is in the subnet of the interface
-                if (match[if_num] < ip_prefix_match((uint8_t *)&mask_all, 
-                    (uint8_t *)&((struct sockaddr_in *)(a->netmask))->sin_addr.s_addr)) {
+                if (match[if_num] < ip_prefix_match((uint8_t *)&mask_all,
+                                                    (uint8_t *)&((struct sockaddr_in *)(a->netmask))->sin_addr.s_addr)) {
                     match[if_num] = 0;
                 }
             }
@@ -74,7 +74,7 @@ int driver_find(const uint8_t *ip, char *if_name, uint8_t *mask) {
     size_t max_if = 0;
     for (i = 0; i < if_num; i++)
         if (match[i] > max_match)
-            max_if = i, max_match = match[i]; // record the longest prefix match
+            max_if = i, max_match = match[i];  // record the longest prefix match
     if (max_match == 0) {
         fprintf(stderr, "Error, no interface found.\n");
         return -1;
@@ -94,6 +94,8 @@ int driver_find(const uint8_t *ip, char *if_name, uint8_t *mask) {
     strcpy(if_name, d->name);
     return 0;
 }
+
+static pcap_dumper_t *dump_file;
 
 /**
  * @brief 打开网卡
@@ -128,7 +130,7 @@ int driver_open() {
         return -1;
     }
     char filter_exp[PCAP_BUF_SIZE];
-    struct bpf_program fp; // berkeley packet filter, 用于在数据包到达应用程序之前进行过滤
+    struct bpf_program fp;  // berkeley packet filter, 用于在数据包到达应用程序之前进行过滤
     uint8_t mac_addr[6] = NET_IF_MAC;
     sprintf(filter_exp,  // 过滤数据包
             "(ether dst %02x:%02x:%02x:%02x:%02x:%02x or ether broadcast) and (not ether src %02x:%02x:%02x:%02x:%02x:%02x)",
@@ -152,6 +154,13 @@ int driver_open() {
         fprintf(stderr, "Error in pcap_setfilter.\n%s.\n", pcap_geterr(pcap));
         return -1;
     }
+    // Open dump file for recording packets
+    dump_file = pcap_dump_open(pcap, "record.pcap");
+    if (dump_file == NULL) {
+        fprintf(stderr, "Error opening dump file: %s\n", pcap_geterr(pcap));
+        pcap_close(pcap);
+        return -1;
+    }
     return 0;
 }
 /**
@@ -163,12 +172,16 @@ int driver_open() {
 int driver_recv(buf_t *buf) {
     struct pcap_pkthdr *pkt_hdr;
     const uint8_t *pkt_data;
-    int ret = pcap_next_ex(pcap, &pkt_hdr, &pkt_data); // read the next packet
+    int ret = pcap_next_ex(pcap, &pkt_hdr, &pkt_data);  // read the next packet
     if (ret == 0)
         return 0;
     else if (ret == 1) {
         memcpy(buf->data, pkt_data, pkt_hdr->len);
         buf->len = pkt_hdr->len;
+        if (dump_file != NULL) {
+            pcap_dump((u_char *)dump_file, pkt_hdr, pkt_data);
+            pcap_dump_flush(dump_file);
+        }
         return pkt_hdr->len;
     }
     fprintf(stderr, "Error in driver_recv.\n%s.\n", pcap_geterr(pcap));
@@ -186,6 +199,15 @@ int driver_send(buf_t *buf) {
         return -1;
     }
 
+    if (dump_file != NULL) {
+        struct pcap_pkthdr hdr;
+        gettimeofday(&hdr.ts, NULL);
+        hdr.caplen = buf->len;
+        hdr.len = buf->len;
+        pcap_dump((u_char *)dump_file, &hdr, buf->data);
+        pcap_dump_flush(dump_file);
+    }
+
     return 0;
 }
 /**
@@ -194,4 +216,8 @@ int driver_send(buf_t *buf) {
  */
 void driver_close() {
     pcap_close(pcap);
+    if (dump_file != NULL) {
+        pcap_dump_close(dump_file);
+        dump_file = NULL;
+    }
 }
